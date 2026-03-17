@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tarkin — Dashboard</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --color-background-primary: #ffffff;
+    --color-background-secondary: #f5f4f0;
+    --color-background-tertiary: #eeece6;
+    --color-text-primary: #1a1a18;
+    --color-text-secondary: #5f5e5a;
+    --color-text-tertiary: #9a9890;
+    --color-border-tertiary: rgba(0,0,0,0.10);
+    --color-border-secondary: rgba(0,0,0,0.18);
+    --font-mono: 'JetBrains Mono', 'Fira Mono', 'Cascadia Code', monospace;
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-background-primary: #1c1c1a;
+      --color-background-secondary: #252522;
+      --color-background-tertiary: #141412;
+      --color-text-primary: #e8e6df;
+      --color-text-secondary: #9a9890;
+      --color-text-tertiary: #5f5e5a;
+      --color-border-tertiary: rgba(255,255,255,0.08);
+      --color-border-secondary: rgba(255,255,255,0.14);
+    }
+  }
+
+  body {
+    font-family: var(--font-mono);
+    background: var(--color-background-tertiary);
+    color: var(--color-text-primary);
+    font-size: 13px;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .app { display: flex; height: 100vh; }
+
+  .sidebar {
+    width: 220px;
+    min-width: 220px;
+    background: var(--color-background-primary);
+    border-right: 0.5px solid var(--color-border-tertiary);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .logo {
+    padding: 16px 16px 12px;
+    border-bottom: 0.5px solid var(--color-border-tertiary);
+  }
+  .logo-text { font-size: 13px; font-weight: 500; color: var(--color-text-primary); letter-spacing: 0.04em; }
+  .logo-sub { font-size: 10px; color: var(--color-text-tertiary); margin-top: 2px; }
+
+  .nav-section { padding: 12px 0 8px; }
+  .nav-label {
+    font-size: 10px;
+    color: var(--color-text-tertiary);
+    padding: 0 14px 6px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    cursor: pointer;
+    color: var(--color-text-secondary);
+    border-left: 2px solid transparent;
+    transition: background 0.1s;
+  }
+  .nav-item:hover { background: var(--color-background-secondary); color: var(--color-text-primary); }
+  .nav-item.active {
+    background: var(--color-background-secondary);
+    color: var(--color-text-primary);
+    border-left: 2px solid #7F77DD;
+  }
+  .nav-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+  .agents-section {
+    padding: 12px 0 8px;
+    border-top: 0.5px solid var(--color-border-tertiary);
+    margin-top: auto;
+  }
+  .agent-item { display: flex; align-items: center; gap: 8px; padding: 6px 14px; }
+  .agent-badge {
+    width: 22px; height: 22px; border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 500; flex-shrink: 0;
+  }
+  .agent-name { font-size: 12px; color: var(--color-text-secondary); flex: 1; }
+  .agent-status { width: 6px; height: 6px; border-radius: 50%; }
+
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  .topbar {
+    background: var(--color-background-primary);
+    border-bottom: 0.5px solid var(--color-border-tertiary);
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .topbar-title { font-size: 14px; font-weight: 500; color: var(--color-text-primary); flex: 1; }
+
+  .tag { padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 500; }
+
+  .btn-sm {
+    padding: 5px 12px;
+    border-radius: var(--border-radius-md);
+    border: 0.5px solid var(--color-border-secondary);
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-size: 12px;
+    cursor: pointer;
+    font-family: var(--font-mono);
+  }
+  .btn-sm:hover { background: var(--color-background-secondary); color: var(--color-text-primary); }
+  .btn-primary { background: #534AB7; color: #EEEDFE; border-color: #534AB7; }
+  .btn-primary:hover { background: #3C3489; }
+
+  .content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    align-content: start;
+  }
+
+  .card {
+    background: var(--color-background-primary);
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-lg);
+    padding: 16px;
+  }
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .card-title {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .card-count { font-size: 11px; color: var(--color-text-tertiary); }
+
+  .task-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 0.5px solid var(--color-border-tertiary);
+    cursor: pointer;
+  }
+  .task-item:last-child { border-bottom: none; }
+  .task-item:hover { opacity: 0.8; }
+
+  .task-check {
+    width: 14px; height: 14px;
+    border-radius: 3px;
+    border: 0.5px solid var(--color-border-secondary);
+    flex-shrink: 0;
+    margin-top: 2px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .task-check.done { background: #1D9E75; border-color: #1D9E75; }
+  .task-check.done::after {
+    content: '';
+    width: 7px; height: 4px;
+    border-left: 1.5px solid #E1F5EE;
+    border-bottom: 1.5px solid #E1F5EE;
+    transform: rotate(-45deg) translateY(-1px);
+    display: block;
+  }
+
+  .task-body { flex: 1; min-width: 0; }
+  .task-title { font-size: 12px; color: var(--color-text-primary); line-height: 1.4; }
+  .task-title.done-text { text-decoration: line-through; color: var(--color-text-tertiary); }
+  .task-meta { display: flex; align-items: center; gap: 6px; margin-top: 3px; }
+  .task-agent { font-size: 10px; padding: 1px 6px; border-radius: 3px; }
+  .task-priority { font-size: 10px; color: var(--color-text-tertiary); }
+
+  .ideas-grid { display: flex; flex-direction: column; gap: 8px; }
+  .idea-card {
+    padding: 10px 12px;
+    border-radius: var(--border-radius-md);
+    border: 0.5px solid var(--color-border-tertiary);
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .idea-card:hover { border-color: var(--color-border-secondary); }
+  .idea-title { font-size: 12px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 3px; }
+  .idea-desc { font-size: 11px; color: var(--color-text-secondary); line-height: 1.4; }
+  .idea-footer { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+
+  .feed-item {
+    padding: 8px 0;
+    border-bottom: 0.5px solid var(--color-border-tertiary);
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .feed-item:last-child { border-bottom: none; }
+  .feed-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+  .feed-text { font-size: 12px; color: var(--color-text-secondary); line-height: 1.5; flex: 1; }
+  .feed-text strong { color: var(--color-text-primary); font-weight: 500; }
+  .feed-time { font-size: 10px; color: var(--color-text-tertiary); flex-shrink: 0; padding-top: 2px; }
+
+  .agent-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 0;
+    border-bottom: 0.5px solid var(--color-border-tertiary);
+  }
+  .agent-row:last-child { border-bottom: none; }
+  .agent-avatar {
+    width: 28px; height: 28px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 500; flex-shrink: 0;
+  }
+  .agent-info { flex: 1; min-width: 0; }
+  .agent-row-name { font-size: 12px; font-weight: 500; color: var(--color-text-primary); }
+  .agent-task-label {
+    font-size: 10px; color: var(--color-text-tertiary);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px;
+  }
+  .progress-bar { width: 60px; height: 4px; background: var(--color-background-secondary); border-radius: 2px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 2px; }
+
+  .pulse { animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <div class="logo">
+      <div class="logo-text">☠ tarkin</div>
+      <div class="logo-sub">v0.1 · 3 agents connected</div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">workspace</div>
+      <div class="nav-item active">
+        <div class="nav-dot" style="background:#7F77DD;"></div>
+        dashboard
+      </div>
+      <div class="nav-item">
+        <div class="nav-dot" style="background:#888780;"></div>
+        ideas
+      </div>
+      <div class="nav-item">
+        <div class="nav-dot" style="background:#888780;"></div>
+        tasks
+      </div>
+      <div class="nav-item">
+        <div class="nav-dot" style="background:#888780;"></div>
+        activity log
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">integrations</div>
+      <div class="nav-item">
+        <div class="nav-dot" style="background:#1D9E75;"></div>
+        vader (claude code)
+      </div>
+      <div class="nav-item">
+        <div class="nav-dot" style="background:#378ADD;"></div>
+        ackbar (openclaw)
+      </div>
+      <div class="nav-item" style="opacity:0.45;">
+        <div class="nav-dot" style="background:#888780;"></div>
+        + add integration
+      </div>
+    </div>
+
+    <div class="agents-section">
+      <div class="nav-label">agents</div>
+      <div class="agent-item">
+        <div class="agent-badge" style="background:#EEEDFE;color:#534AB7;">V</div>
+        <div class="agent-name">vader</div>
+        <div class="agent-status pulse" style="background:#1D9E75;"></div>
+      </div>
+      <div class="agent-item">
+        <div class="agent-badge" style="background:#E6F1FB;color:#185FA5;">A</div>
+        <div class="agent-name">ackbar</div>
+        <div class="agent-status pulse" style="background:#1D9E75;"></div>
+      </div>
+      <div class="agent-item">
+        <div class="agent-badge" style="background:#FAEEDA;color:#854F0B;">R2</div>
+        <div class="agent-name">r2-d2</div>
+        <div class="agent-status" style="background:#888780;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title">dashboard</div>
+      <div class="tag" style="background:#E1F5EE;color:#0F6E56;">3 agents online</div>
+      <button class="btn-sm">assign task</button>
+      <button class="btn-sm btn-primary">+ idea</button>
+    </div>
+
+    <div class="content">
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">active tasks</div>
+          <div class="card-count">4 of 9 done</div>
+        </div>
+
+        <div class="task-item">
+          <div class="task-check"></div>
+          <div class="task-body">
+            <div class="task-title">build MCP connector for openclaw</div>
+            <div class="task-meta">
+              <div class="task-agent" style="background:#E6F1FB;color:#185FA5;">ackbar</div>
+              <div class="task-priority">high · in progress</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="task-item">
+          <div class="task-check"></div>
+          <div class="task-body">
+            <div class="task-title">design task assignment UI flow</div>
+            <div class="task-meta">
+              <div class="task-agent" style="background:#EEEDFE;color:#534AB7;">vader</div>
+              <div class="task-priority">medium · waiting</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="task-item">
+          <div class="task-check done"></div>
+          <div class="task-body">
+            <div class="task-title done-text">set up project scaffold</div>
+            <div class="task-meta">
+              <div class="task-agent" style="background:#EEEDFE;color:#534AB7;">vader</div>
+              <div class="task-priority">done</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="task-item">
+          <div class="task-check done"></div>
+          <div class="task-body">
+            <div class="task-title done-text">write tarkin spec doc</div>
+            <div class="task-meta">
+              <div class="task-agent" style="background:#FAEEDA;color:#854F0B;">r2-d2</div>
+              <div class="task-priority">done</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="task-item">
+          <div class="task-check"></div>
+          <div class="task-body">
+            <div class="task-title">implement persistent idea storage</div>
+            <div class="task-meta">
+              <div class="task-agent" style="background:#FAEEDA;color:#854F0B;">r2-d2</div>
+              <div class="task-priority">low · backlog</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">ideas</div>
+          <div class="card-count">3 captured</div>
+        </div>
+
+        <div class="ideas-grid">
+          <div class="idea-card">
+            <div class="idea-title">unified agent context window</div>
+            <div class="idea-desc">one scrollable feed showing what each agent is currently thinking / working on, without switching tabs</div>
+            <div class="idea-footer">
+              <div class="tag" style="background:#EEEDFE;color:#534AB7;font-size:10px;">ux</div>
+              <div class="tag" style="background:#E1F5EE;color:#0F6E56;font-size:10px;">high value</div>
+            </div>
+          </div>
+
+          <div class="idea-card">
+            <div class="idea-title">inter-agent messaging bus</div>
+            <div class="idea-desc">agents can leave notes for each other — vader passes context to ackbar when handing off tasks</div>
+            <div class="idea-footer">
+              <div class="tag" style="background:#E6F1FB;color:#185FA5;font-size:10px;">infra</div>
+              <div class="tag" style="background:#FAEEDA;color:#854F0B;font-size:10px;">complex</div>
+            </div>
+          </div>
+
+          <div class="idea-card">
+            <div class="idea-title">quick-capture hotkey</div>
+            <div class="idea-desc">global shortcut drops an input anywhere on screen — idea gets saved and optionally routed to the right agent</div>
+            <div class="idea-footer">
+              <div class="tag" style="background:#EEEDFE;color:#534AB7;font-size:10px;">ux</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">agents</div>
+          <div class="card-count">live workload</div>
+        </div>
+
+        <div class="agent-row">
+          <div class="agent-avatar" style="background:#EEEDFE;color:#534AB7;">V</div>
+          <div class="agent-info">
+            <div class="agent-row-name">vader</div>
+            <div class="agent-task-label">task assignment UI flow · designing</div>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width:35%;background:#7F77DD;"></div>
+          </div>
+        </div>
+
+        <div class="agent-row">
+          <div class="agent-avatar" style="background:#E6F1FB;color:#185FA5;">A</div>
+          <div class="agent-info">
+            <div class="agent-row-name">ackbar</div>
+            <div class="agent-task-label">MCP connector · building</div>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width:60%;background:#378ADD;"></div>
+          </div>
+        </div>
+
+        <div class="agent-row">
+          <div class="agent-avatar" style="background:#F1EFE8;color:#5F5E5A;">R2</div>
+          <div class="agent-info">
+            <div class="agent-row-name">r2-d2</div>
+            <div class="agent-task-label">idle · awaiting assignment</div>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width:0%;background:#888780;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">activity</div>
+          <div class="card-count">live feed</div>
+        </div>
+
+        <div class="feed-item">
+          <div class="feed-dot" style="background:#1D9E75;"></div>
+          <div class="feed-text"><strong>ackbar</strong> started working on MCP connector</div>
+          <div class="feed-time">2m ago</div>
+        </div>
+        <div class="feed-item">
+          <div class="feed-dot" style="background:#7F77DD;"></div>
+          <div class="feed-text"><strong>you</strong> assigned "design task assignment UI flow" → vader</div>
+          <div class="feed-time">14m ago</div>
+        </div>
+        <div class="feed-item">
+          <div class="feed-dot" style="background:#378ADD;"></div>
+          <div class="feed-text"><strong>r2-d2</strong> completed "write tarkin spec doc"</div>
+          <div class="feed-time">1h ago</div>
+        </div>
+        <div class="feed-item">
+          <div class="feed-dot" style="background:#7F77DD;"></div>
+          <div class="feed-text"><strong>you</strong> captured idea: "quick-capture hotkey"</div>
+          <div class="feed-time">2h ago</div>
+        </div>
+        <div class="feed-item">
+          <div class="feed-dot" style="background:#1D9E75;"></div>
+          <div class="feed-text"><strong>vader</strong> completed "set up project scaffold"</div>
+          <div class="feed-time">3h ago</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>
